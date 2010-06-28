@@ -116,18 +116,6 @@ namespace :morning_glory do
       dc = MgFileCopier.new(exclude)
       dc.copy SYNC_DIRECTORY, TEMP_DIRECTORY
       
-      # DIRECTORIES.each do |directory|
-      #   Dir[File.join(SYNC_DIRECTORY, directory, '**', "*.{#{CONTENT_TYPES.keys.join(',')}}")].each do |file|
-      #     file_path = file.gsub(/.*public\//, "")
-      #     temp_file_path = File.join(TEMP_DIRECTORY, file_path)
-      #     
-      #     File.makedirs(File.dirname(temp_file_path)) if !FileTest::directory?(File.dirname(temp_file_path))
-      #     
-      #     puts " ** Copied to #{temp_file_path}"
-      #     FileUtils.copy file, temp_file_path
-      #   end
-      # end
-      
       puts "* Replacing image references within CSS files"
       DIRECTORIES.each do |directory|
         Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{css}")].each do |file|
@@ -137,14 +125,14 @@ namespace :morning_glory do
         end
       end
       
-      puts "* Replacing image references within JS files"
-      DIRECTORIES.each do |directory|
-        Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{js}")].each do |file|
-          puts " ** Renaming image references within #{file}"
-          buffer = File.new(file,'r').read.gsub(REGEX_ROOT_RELATIVE_CSS_URL) { |m| m.insert m.index('(') + ($1 ? 2 : 1), '/'+ENV['RAILS_ASSET_ID'] }
-          File.open(file,'w') {|fw| fw.write(buffer)}
-        end
-      end
+      # puts "* Replacing image references within JS files"
+      # DIRECTORIES.each do |directory|
+      #   Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{js}")].each do |file|
+      #     puts " ** Renaming image references within #{file}"
+      #     buffer = File.new(file,'r').read.gsub(REGEX_ROOT_RELATIVE_CSS_URL) { |m| m.insert m.index('(') + ($1 ? 2 : 1), '/'+ENV['RAILS_ASSET_ID'] }
+      #     File.open(file,'w') {|fw| fw.write(buffer)}
+      #   end
+      # end
       
       AWS::S3::Base.establish_connection!(
         :access_key_id     => S3_CONFIG['access_key_id'],
@@ -184,7 +172,7 @@ namespace :morning_glory do
         raise
       ensure
         puts "* Deleting temp cache files in #{TEMP_DIRECTORY}"
-        # FileUtils.rm_r TEMP_DIRECTORY
+        FileUtils.rm_r TEMP_DIRECTORY
       end
       
       puts "MorningGlory: DONE! Your assets have been deployed to the Cloudfront CDN."
