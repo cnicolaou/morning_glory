@@ -12,7 +12,7 @@ rescue
 end
 
 begin
-  S3_CONFIG = YAML.load_file("#{RAILS_ROOT}/config/app.yml")["s3"][Rails.env] if !defined? S3_CONFIG
+  S3_CONFIG = YAML.load_file("#{RAILS_ROOT}/config/app.yml")[Rails.env]["s3"] if !defined? S3_CONFIG
 rescue
   raise "Error loading MorningGlory configuration files. Please check config/app.yml is configured correctly."
 end

@@ -111,7 +111,7 @@ namespace :morning_glory do
       File.makedirs TEMP_DIRECTORY if !FileTest::directory?(TEMP_DIRECTORY)
       puts "* Copying files to working directory for cache-busting-renaming"
       
-      exclude = ["^\\.", "_old", "cheese.jpg"]
+      exclude = ["^\\.", "_old"]
       
       dc = MgFileCopier.new(exclude)
       dc.copy SYNC_DIRECTORY, TEMP_DIRECTORY
