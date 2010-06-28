@@ -22,7 +22,7 @@ Morning Glory cannot configure your CloudFront distributions for you automatical
 h2. Installation
 
 <pre>
-script/plugin install git://github.com/adamburmister/morning_glory.git
+script/plugin install git://github.com/cnicolaou/morning_glory.git
 </pre>
 
 h2. Usage
@@ -49,7 +49,7 @@ production:
   delete_prev_rev: true             # Delete the previous asset release (save on S3 storage space)
 </pre>
 
-h3. The Amazon S3 authentication keys configuration file, @config/s3.yml@
+h3. The Amazon S3 authentication keys configuration file, @config/app.yml@
 
 This file provides the access credentials for your Amazon AWS S3 account.
 You can configure keys for all your environments (production, staging, testing, development).
@@ -57,8 +57,9 @@ You can configure keys for all your environments (production, staging, testing, 
 <pre>
 ---
 production:
-  access_key_id: YOUR_ACCESS_KEY
-  secret_access_key: YOUR_SECRET_ACCESS_KEY
+  s3:
+    access_key_id: YOUR_ACCESS_KEY
+    secret_access_key: YOUR_SECRET_ACCESS_KEY
 </pre>
 
 h3. Set up an asset_host
