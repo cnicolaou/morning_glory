@@ -1,8 +1,8 @@
 require File.dirname(__FILE__) + "/../morning_glory"
+require File.dirname(__FILE__) + "/../mg_file_copier"
 
 namespace :morning_glory do
   namespace :cloudfront do
-
     @@prev_cdn_revision = nil
     @@scm_commit_required = false
     
@@ -94,7 +94,7 @@ namespace :morning_glory do
       SYNC_DIRECTORY  = File.join(Rails.root, 'public')
       TEMP_DIRECTORY  = File.join(Rails.root, 'tmp', 'morning_glory', 'cloudfront', Rails.env, ENV['RAILS_ASSET_ID']);
       # Configuration constants
-      BUCKET          = MORNING_GLORY_CONFIG[Rails.env]['bucket'] || Rails.env    
+      BUCKET          = MORNING_GLORY_CONFIG[Rails.env]['bucket'] || Rails.env
       DIRECTORIES     = MORNING_GLORY_CONFIG[Rails.env]['asset_directories'] || %w(images javascripts stylesheets)
       CONTENT_TYPES   = MORNING_GLORY_CONFIG[Rails.env]['content_types'] || {
                           :jpg => 'image/jpeg',
@@ -106,22 +106,28 @@ namespace :morning_glory do
       S3_LOGGING_ENABLED = MORNING_GLORY_CONFIG[Rails.env]['s3_logging_enabled'] || false
       DELETE_PREV_REVISION = MORNING_GLORY_CONFIG[Rails.env]['delete_prev_rev'] || false
       REGEX_ROOT_RELATIVE_CSS_URL = /url\((\'|\")?(\/+.*(#{CONTENT_TYPES.keys.map { |k| '\.' + k.to_s }.join('|')}))\1?\)/
-    
+      
       # Copy all the assets into the temp directory for processing
       File.makedirs TEMP_DIRECTORY if !FileTest::directory?(TEMP_DIRECTORY)
       puts "* Copying files to working directory for cache-busting-renaming"
-      DIRECTORIES.each do |directory|
-        Dir[File.join(SYNC_DIRECTORY, directory, '**', "*.{#{CONTENT_TYPES.keys.join(',')}}")].each do |file|
-          file_path = file.gsub(/.*public\//, "")
-          temp_file_path = File.join(TEMP_DIRECTORY, file_path)
-
-          File.makedirs(File.dirname(temp_file_path)) if !FileTest::directory?(File.dirname(temp_file_path))
-        
-          puts " ** Copied to #{temp_file_path}"
-          FileUtils.copy file, temp_file_path
-        end
-      end
-
+      
+      exclude = ["^\\.", "_old", "cheese.jpg"]
+      
+      dc = MgFileCopier.new(exclude)
+      dc.copy SYNC_DIRECTORY, TEMP_DIRECTORY
+      
+      # DIRECTORIES.each do |directory|
+      #   Dir[File.join(SYNC_DIRECTORY, directory, '**', "*.{#{CONTENT_TYPES.keys.join(',')}}")].each do |file|
+      #     file_path = file.gsub(/.*public\//, "")
+      #     temp_file_path = File.join(TEMP_DIRECTORY, file_path)
+      #     
+      #     File.makedirs(File.dirname(temp_file_path)) if !FileTest::directory?(File.dirname(temp_file_path))
+      #     
+      #     puts " ** Copied to #{temp_file_path}"
+      #     FileUtils.copy file, temp_file_path
+      #   end
+      # end
+      
       puts "* Replacing image references within CSS files"
       DIRECTORIES.each do |directory|
         Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{css}")].each do |file|
@@ -130,34 +136,43 @@ namespace :morning_glory do
           File.open(file,'w') {|fw| fw.write(buffer)}
         end
       end
-
+      
       # TODO: Update references within JS files
-    
+      
+      puts "* Replacing image references within JS files"
+      DIRECTORIES.each do |directory|
+        Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{js}")].each do |file|
+          puts " ** Renaming image references within #{file}"
+          buffer = File.new(file,'r').read.gsub(REGEX_ROOT_RELATIVE_CSS_URL) { |m| m.insert m.index('(') + ($1 ? 2 : 1), '/'+ENV['RAILS_ASSET_ID'] }
+          File.open(file,'w') {|fw| fw.write(buffer)}
+        end
+      end
+      
       AWS::S3::Base.establish_connection!(
         :access_key_id     => S3_CONFIG['access_key_id'],
         :secret_access_key => S3_CONFIG['secret_access_key']
       )
-
+      
       begin
         puts "* Attempting to create S3 Bucket '#{BUCKET}'"
         AWS::S3::Bucket.create(BUCKET)
-      
+        
         AWS::S3::Bucket.enable_logging_for(BUCKET) if S3_LOGGING_ENABLED
-
+        
         puts "* Uploading files to S3 Bucket '#{BUCKET}'"
         DIRECTORIES.each do |directory|
           Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{#{CONTENT_TYPES.keys.join(',')}}")].each do |file|
             file_path = file.gsub(/.*#{TEMP_DIRECTORY}\//, "")
             file_path = File.join(ENV['RAILS_ASSET_ID'], file_path)
             file_ext = file.split(/\./)[-1].to_sym
-          
+            
             puts " ** Uploading #{BUCKET}/#{file_path}"
             AWS::S3::S3Object.store(file_path, open(file), BUCKET,
               :access => :public_read,
               :content_type => CONTENT_TYPES[file_ext])
           end
         end
-
+        
         # If the configured to delete the prev revision, and the prev revision value was in the YAML (not the blank concat of CLOUDFRONT_REVISION_PREFIX + revision number)
         if DELETE_PREV_REVISION && @@prev_cdn_revision != CLOUDFRONT_REVISION_PREFIX
           # TODO: Figure out how to delete from the S3 bucket properly
@@ -171,7 +186,7 @@ namespace :morning_glory do
         raise
       ensure
         puts "* Deleting temp cache files in #{TEMP_DIRECTORY}"
-        FileUtils.rm_r TEMP_DIRECTORY
+        # FileUtils.rm_r TEMP_DIRECTORY
       end
       
       puts "MorningGlory: DONE! Your assets have been deployed to the Cloudfront CDN."

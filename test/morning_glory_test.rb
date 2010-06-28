@@ -1,4 +1,4 @@
-require 'test_helper'
+require File.dirname(__FILE__) + '/test_helper'
 
 RAILS_ASSET_ID = 'REV_TEST'
 CONTENT_TYPES   = {
@@ -12,9 +12,15 @@ REGEX_ROOT_RELATIVE_CSS_URL = /url\((\'|\")?(\/+.*(#{CONTENT_TYPES.keys.map { |k
 REPLACEMENT = "url(\1#{RAILS_ASSET_ID}\2\1)"
 
 class MorningGloryTest < ActiveSupport::TestCase
-
+  test "CSS URL replacement" do
+    assert_equals "background: url(/images/test.png)".gsub(REGEX_ROOT_RELATIVE_CSS_URL, REPLACEMENT), ""
+  end
+  
+  test "CSS URL replacement - nested folder" do
+    assert_equals "background: url(/images/test.png)".gsub(REGEX_ROOT_RELATIVE_CSS_URL, REPLACEMENT), ""
+  end
+  
   test "CSS URL replacment" do
     assert_equals "background: url(/images/test.png)".gsub(REGEX_ROOT_RELATIVE_CSS_URL, REPLACEMENT), ""
-  end 
-  
+  end
 end
