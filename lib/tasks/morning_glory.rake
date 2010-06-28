@@ -137,8 +137,6 @@ namespace :morning_glory do
         end
       end
       
-      # TODO: Update references within JS files
-      
       puts "* Replacing image references within JS files"
       DIRECTORIES.each do |directory|
         Dir[File.join(TEMP_DIRECTORY, directory, '**', "*.{js}")].each do |file|
