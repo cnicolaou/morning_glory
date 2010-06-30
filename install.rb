@@ -32,17 +32,19 @@ Sample config/morning_glory.yml:
 
 
 = Amazon AWS =
-You will need to manually create & configure your config/s3.yml file.
+You will need to manually create & configure your config/app.yml file.
 This file contains your access credentials for accessing the Amazon S3 service.
-Sample config/s3.yml:
+Sample config/app.yml:
 
   ---
   production:
-    access_key_id: YOUR_ACCESS_KEY
-    secret_access_key: YOUR_SECRET_ACCESS_KEY
+    s3:
+      access_key_id: YOUR_ACCESS_KEY
+      secret_access_key: YOUR_SECRET_ACCESS_KEY
   staging:
-    access_key_id: YOUR_ACCESS_KEY
-    secret_access_key: YOUR_SECRET_ACCESS_KEY
+    s3:
+      access_key_id: YOUR_ACCESS_KEY
+      secret_access_key: YOUR_SECRET_ACCESS_KEY
 
 EOF
 puts '=' * 80
