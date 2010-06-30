@@ -135,8 +135,8 @@ namespace :morning_glory do
       # end
       
       AWS::S3::Base.establish_connection!(
-        :access_key_id     => S3_CONFIG['access_key_id'],
-        :secret_access_key => S3_CONFIG['secret_access_key']
+        :access_key_id     => S3_CONFIG['access_key'],
+        :secret_access_key => S3_CONFIG['secret_key']
       )
       
       begin
